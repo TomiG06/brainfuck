@@ -1,4 +1,5 @@
 *
 !/bftest/
+!makefile
 !*.c
 !*.b
