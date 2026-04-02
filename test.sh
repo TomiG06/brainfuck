@@ -6,5 +6,5 @@ for f in bftest/*.b; do
     echo "Compiling $f.."
     echo
     ./brainf -c $f
-    ./b
+    ./out
 done
