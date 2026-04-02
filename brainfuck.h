@@ -15,7 +15,7 @@
 
 void parse(FILE* f, uint8_t* inst);
 
-void compile(uint8_t* inst, const char* fout);
+int compile(uint8_t* inst, const char* fout);
 
 void interpret(uint8_t* inst);
 

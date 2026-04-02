@@ -37,17 +37,19 @@ int main(int argc, char* argv[]) {
     }
 
     FILE* f = fopen(argv[2], "r");
-
     parse(f, inst);
-
     fclose(f);
 
     if(action == interpret_c) {
         interpret(inst);
     } else {
-        compile(inst, "out.s");
+        int err = compile(inst, "out.s");
+        if(err) {
+             printf("Could not create output file\n");
+             return 1;
+        }
     }
 
     return 0;
-
 }
+

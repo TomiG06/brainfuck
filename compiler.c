@@ -110,7 +110,7 @@ void compile_cmd(struct compilation_info* ci) {
     }
 }
 
-void compile(uint8_t* inst, const char* fname) {
+int compile(uint8_t* inst, const char* fname) {
     struct compilation_info ci = {};
     
     ci.f = fopen(fname, "w");
@@ -123,8 +123,7 @@ void compile(uint8_t* inst, const char* fname) {
     ci.backend = create_x86_64_backend();
 
     if(ci.backend.init(fname)) {
-        printf("couldn't create output file - aborting\n");
-        return;
+        return 1;
     }
 
     while(*ci.inst_p) {
@@ -133,5 +132,7 @@ void compile(uint8_t* inst, const char* fname) {
     }
 
     ci.backend.finalize();
+
+    return 0;
 }
 
