@@ -13,6 +13,11 @@ enum {
 
 uint8_t inst[4096] = {0};
 
+void cleanFilename(char* fname) {
+    char *dot = strrchr(fname, '.');
+    if(dot) *dot = '\0';
+}
+
 int main(int argc, char* argv[]) {
 
     uint8_t action;
@@ -43,7 +48,8 @@ int main(int argc, char* argv[]) {
     if(action == interpret_c) {
         interpret(inst);
     } else {
-        int err = compile(inst, "out.s");
+        cleanFilename(argv[2]);
+        int err = compile(inst, argv[2]);
         if(err) {
              printf("Could not create output file\n");
              return 1;

@@ -29,15 +29,14 @@ size_t peek(struct stack* s) {
 }
 
 struct compilation_info {
-    struct stack s;
     compiler_backend backend;
+    struct stack s;
     size_t loop_count;
     size_t dead_depth;
 
     uint8_t* inst_p;
     uint8_t* start;
 
-    FILE* f;
     char metWCmd;
 };
 
@@ -113,7 +112,6 @@ void compile_cmd(struct compilation_info* ci) {
 int compile(uint8_t* inst, const char* fname) {
     struct compilation_info ci = {};
     
-    ci.f = fopen(fname, "w");
     ci.inst_p = inst;
     ci.start = inst;
     ci.loop_count = 0;

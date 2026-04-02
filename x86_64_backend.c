@@ -5,7 +5,8 @@
 #include "backend.h"
 
 static FILE* f;
-static const char* fasmname;
+static char* fnameAsm;
+static const char* fnameTheme;
 
 static const char* program_header = 
     ".intel_syntax noprefix\n"
@@ -59,15 +60,17 @@ static const char* program_footer = "call exit\n";
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
 
-// as a convention we expect a *.s filename
 
 int x86_64_init(const char* fname) {
-    f = fopen(fname, "w");
+    fnameTheme = fname;
+
+    fnameAsm = (char*) malloc(strlen(fname) + 3);
+    snprintf(fnameAsm, strlen(fname)+3, "%s.s", fname);
+    f = fopen(fnameAsm, "w");
     if(!f) {
         return 1;
     }
 
-    fasmname = fname;
     fputs(program_header, f);
     return 0;
 }
@@ -132,18 +135,13 @@ void x86_64_finalize() {
     fputs(program_footer, f);
     fclose(f);
     
-    snprintf(obj, sizeof(obj), "%s.o", fasmname);
+    snprintf(obj, sizeof(obj), "%s.o", fnameTheme);
+    snprintf(out, sizeof(out), "%s.out", fnameTheme);
 
-    // sth.s -> s (output executable) (.s is the convention)
-    strncpy(out, fasmname, sizeof(out));
-    char* dot = strrchr(out, '.'); 
-    if(dot) {
-        *dot = '\0';
-    }
-
-    snprintf(cmd, sizeof(cmd), "as -o %s %s && ld -o %s %s && rm %s %s", obj, fasmname, out, obj, fasmname, obj);
-
+    snprintf(cmd, sizeof(cmd), "as -o %s %s && ld -o %s %s && rm %s %s", obj, fnameAsm, out, obj, fnameAsm, obj);
     system(cmd);
+
+    free(fnameAsm);
 }
 
 compiler_backend create_x86_64_backend() {
