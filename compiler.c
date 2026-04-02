@@ -63,28 +63,28 @@ void compile_cmd(struct compilation_info* ci) {
     switch(cmd) {
         case INC_P:
             times = count_cmd(ci, cmd);
-            ci->backend.emit_right(ci->f, times);
+            ci->backend.emit_right(times);
             break;
         case DEC_P:
             times = count_cmd(ci, cmd);
-            ci->backend.emit_left(ci->f, times);
+            ci->backend.emit_left(times);
             break;
         case INC_C:
             ci->metWCmd = 1;
             times = count_cmd(ci, cmd);
-            ci->backend.emit_inc(ci->f, times);
+            ci->backend.emit_inc(times);
             break;
         case DEC_C:
             ci->metWCmd = 1;
             times = count_cmd(ci, cmd);
-            ci->backend.emit_dec(ci->f, times);
+            ci->backend.emit_dec(times);
             break;
         case INPUT:
             ci->metWCmd = 1;
-            ci->backend.emit_input(ci->f);
+            ci->backend.emit_input();
             break;
         case OUTPUT:
-            ci->backend.emit_output(ci->f);
+            ci->backend.emit_output();
             break;
         case OPEN:
             if(ci->dead_depth || !ci->metWCmd) {
@@ -93,13 +93,13 @@ void compile_cmd(struct compilation_info* ci) {
             }
 
             push(&ci->s, ci->loop_count);
-            ci->backend.emit_loop_start(ci->f, ci->loop_count);
+            ci->backend.emit_loop_start(ci->loop_count);
             ci->loop_count++;
             break;
         case CLOSE:
             if(!ci->dead_depth) {
                 size_t l = peek(&ci->s);
-                ci->backend.emit_loop_end(ci->f, l);
+                ci->backend.emit_loop_end(l);
                 pop(&ci->s);
             } else {
                 ci->dead_depth--;
@@ -110,10 +110,10 @@ void compile_cmd(struct compilation_info* ci) {
     }
 }
 
-void compile(uint8_t* inst) {
+void compile(uint8_t* inst, const char* fname) {
     struct compilation_info ci = {};
     
-    ci.f = fopen("out.s", "w");
+    ci.f = fopen(fname, "w");
     ci.inst_p = inst;
     ci.start = inst;
     ci.loop_count = 0;
@@ -122,17 +122,16 @@ void compile(uint8_t* inst) {
     ci.metWCmd = 0;
     ci.backend = create_x86_64_backend();
 
-    ci.backend.emit_header(ci.f);
+    if(ci.backend.init(fname)) {
+        printf("couldn't create output file - aborting\n");
+        return;
+    }
 
     while(*ci.inst_p) {
         compile_cmd(&ci);
         ci.inst_p++;
     }
 
-    ci.backend.emit_footer(ci.f);
-    fclose(ci.f);
-
-    /* assemble -> link -> remove source and object code */
-    system("as -o out.o out.s && ld -o out out.o && rm out.o");
+    ci.backend.finalize();
 }
 

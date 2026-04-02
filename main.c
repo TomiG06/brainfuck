@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
     if(action == interpret_c) {
         interpret(inst);
     } else {
-        compile(inst);
+        compile(inst, "out.s");
     }
 
     return 0;

@@ -1,6 +1,11 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "backend.h"
+
+static FILE* f;
+static const char* fasmname;
 
 static const char* program_header = 
     ".intel_syntax noprefix\n"
@@ -54,11 +59,20 @@ static const char* program_footer = "call exit\n";
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
 
-void x86_64_emit_header(FILE* f) {
+// as a convention we expect a *.s filename
+
+int x86_64_init(const char* fname) {
+    f = fopen(fname, "w");
+    if(!f) {
+        return 1;
+    }
+
+    fasmname = fname;
     fputs(program_header, f);
+    return 0;
 }
 
-void x86_64_emit_inc(FILE* f, size_t count) {
+void x86_64_emit_inc(size_t count) {
     if(count == 1) {
         fputs(inc_one_instruction, f);
     } else {
@@ -66,7 +80,7 @@ void x86_64_emit_inc(FILE* f, size_t count) {
     }
 }
 
-void x86_64_emit_dec(FILE* f, size_t count) {
+void x86_64_emit_dec(size_t count) {
     if(count == 1) {
         fputs(dec_one_instruction, f);
     } else {
@@ -75,7 +89,7 @@ void x86_64_emit_dec(FILE* f, size_t count) {
 }
 
 
-void x86_64_emit_right(FILE* f, size_t count) {
+void x86_64_emit_right(size_t count) {
     if(count == 1) {
         fputs(right_one_instruction, f);
     } else {
@@ -84,7 +98,7 @@ void x86_64_emit_right(FILE* f, size_t count) {
 }
 
 
-void x86_64_emit_left(FILE* f, size_t count) {
+void x86_64_emit_left(size_t count) {
     if(count == 1) {
         fputs(left_one_instruction, f);
     } else {
@@ -92,29 +106,49 @@ void x86_64_emit_left(FILE* f, size_t count) {
     }
 }
 
-void x86_64_emit_loop_start(FILE* f, size_t label) {
+void x86_64_emit_loop_start(size_t label) {
     fprintf(f, open_loop_instruction, label, label);
 }
 
-void x86_64_emit_loop_end(FILE* f, size_t label) {
+void x86_64_emit_loop_end(size_t label) {
     fprintf(f, close_loop_instruction, label, label);
 }
 
-void x86_64_emit_input(FILE* f) {
+#pragma GCC diagnostic pop
+
+void x86_64_emit_input() {
     fputs(input_instruction, f);
 }
 
-void x86_64_emit_output(FILE* f) {
+void x86_64_emit_output() {
     fputs(output_instruction, f);
 }
 
-void x86_64_emit_footer(FILE* f) {
+void x86_64_finalize() {
+    char cmd[2048];
+    char obj[256];
+    char out[256];
+
     fputs(program_footer, f);
+    fclose(f);
+    
+    snprintf(obj, sizeof(obj), "%s.o", fasmname);
+
+    // sth.s -> s (output executable) (.s is the convention)
+    strncpy(out, fasmname, sizeof(out));
+    char* dot = strrchr(out, '.'); 
+    if(dot) {
+        *dot = '\0';
+    }
+
+    snprintf(cmd, sizeof(cmd), "as -o %s %s && ld -o %s %s && rm %s %s", obj, fasmname, out, obj, fasmname, obj);
+
+    system(cmd);
 }
 
 compiler_backend create_x86_64_backend() {
     return (compiler_backend) {
-        .emit_header     = x86_64_emit_header,
+        .init            = x86_64_init,
         .emit_inc        = x86_64_emit_inc,
         .emit_dec        = x86_64_emit_dec,
         .emit_right      = x86_64_emit_right,
@@ -123,9 +157,8 @@ compiler_backend create_x86_64_backend() {
         .emit_loop_end   = x86_64_emit_loop_end,
         .emit_input      = x86_64_emit_input,
         .emit_output     = x86_64_emit_output,
-        .emit_footer     = x86_64_emit_footer,
+        .finalize        = x86_64_finalize
     };
 }
 
-#pragma GCC diagnostic pop
 
